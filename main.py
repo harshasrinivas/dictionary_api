@@ -14,6 +14,13 @@ with open('threshold.pickle', 'rb') as handle:
 orangeLower = val[0]
 orangeUpper = val[1]
 
+def clean(word):
+	new_word = ""
+	for c in word:
+		if c.isalpha() or c == ' ':
+			new_word += c
+	return new_word.split(' ')[0]
+
 def process(find_meaning = False):
 	frame = cv2.imread('image.jpg')
 	frame = imutils.resize(frame, width=2000)
@@ -127,7 +134,8 @@ def process(find_meaning = False):
 	cv2.imwrite("Word.jpg", croppedRotated)
 
 	#Using OCR here
-	word = pytesseract.image_to_string(Image.open('Word.jpg'))
+	word = pytesseract.image_to_string(Image.open('Word.jpg'), config='-psm 8')
+	word = clean(word)
 	print "Detected :", word
 	print "Corrected :", spell(word)
 	word = spell(word)
@@ -140,12 +148,12 @@ def process(find_meaning = False):
 			result = json.loads(r.text)
 			meaning = result["results"][0]["senses"][0]["definition"][0]
 	except:
-		print "Trouble getting meaning"
-	print meaning
+		meaning = "Trouble getting meaning"
+	print meaning + "\n\n"
 
 	#Read aloud here
 	engine = pyttsx.init()
-	engine.say(word + ". " + meaning)
+	engine.say("Word. " + word + ". Meaning. " + meaning)
 	engine.runAndWait()
 
 
@@ -178,18 +186,18 @@ while True:
 		print "No camera"
 		break
 	hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-	#mask = cv2.inRange(hsv, orangeLower, orangeUpper)
+	mask = cv2.inRange(hsv, orangeLower, orangeUpper)
 	if check_box(frame):
 		count += 1;
-		if(count >= 50):
+		if(count >= 40):
 			cv2.imwrite("image.jpg", frame)
-			process()
+			process(False)
 			count = 0
 	else:
 		count = 0
 	#print count
 	cv2.imshow("video", frame)
-	#cv2.imshow("mask", mask)
+	cv2.imshow("mask", mask)
 	key = cv2.waitKey(1) & 0xFF
  
 	# if the 'q' key is pressed, stop the loop
